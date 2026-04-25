@@ -356,6 +356,16 @@ All non-GET routes require the `x-groq-key` header.
 
 ## What I'd build next, enhancing current TwinMind's Live Suggestions:
 
+1) Suggestions based on future predictions
+
+TwinMind's live suggestion feature suggest based on the current audio.
+But having a feature that could involve "anticipation cards" would be a good add-on.
+So the user might not have said it, but TwinMind can intelligently anticipate upcoming questions that may arise based on the current context.
+
+2) If the mic is on, but there is no audio input for 15+ seconds, or a valid benchmark, TwinMind can suggest some "Questions" based on the context and possible directions the user could go from there.
+
+3) To view the to-do list, we have to click on that button, but having access to a hovering to-do list can allow users to check off things on the list while on another task.
+They can skip through navigating to the to-do list as a separate activity.
 
 
 ======
