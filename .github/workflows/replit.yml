@@ -1,0 +1,86 @@
+# CI + optional production trigger for Replit.
+#
+# - build: typecheck (frontend) + import (backend) + smoke docker build (PRs / non-main)
+#
+# - deploy-replit: on push / workflow_dispatch to `main` after a green build. The
+#   curl step runs only when REPLIT_DEPLOY_HOOK is set. Job env copies the
+#   secret so the step can use `if: env... != ''` (IDE-friendly, same behavior).
+#   Replit can also deploy when the Repl is Git-connected; the hook is optional.
+#
+# Secret (optional):
+#   REPLIT_DEPLOY_HOOK — full URL; curl POST is sent with no body (tweak the step
+#   if your hook expects headers or JSON — see Replit deployment / integration docs).
+#
+name: CI (Replit)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: replit-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend & typecheck
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run typecheck
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
+
+      - name: Install Python deps
+        run: pip install .
+
+      - name: Import FastAPI app
+        run: python -c "import backend.main; print('backend import ok')"
+
+      - name: Build Docker image (smoke, PR / not main only)
+        if: |
+          github.ref != 'refs/heads/main' ||
+          github.event_name == 'pull_request'
+        run: docker build -t twinmind:ci .
+
+  deploy-replit:
+    needs: build
+    if: success() && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    env:
+      REPLIT_DEPLOY_HOOK: ${{ secrets.REPLIT_DEPLOY_HOOK }}
+    steps:
+      - name: POST deploy hook
+        if: env.REPLIT_DEPLOY_HOOK != ''
+        run: |
+          set -euo pipefail
+          echo "Triggering Replit deploy hook…"
+          # Many hosting platforms accept POST with no body; add -H "Authorization: ..." in your fork if required.
+          curl -fsS -X POST -m 60 \
+            -H "Accept: application/json" \
+            -H "User-Agent: twinmind-ci/${{ github.run_id }}" \
+            -H "X-GitHub-Event: push" \
+            -H "X-GitHub-SHA: ${{ github.sha }}" \
+            -H "X-GitHub-Ref: ${{ github.ref }}" \
+            "$REPLIT_DEPLOY_HOOK"
