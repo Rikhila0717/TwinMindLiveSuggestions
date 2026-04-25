@@ -1,16 +1,3 @@
-# CI + optional production trigger for Replit.
-#
-# - build: typecheck (frontend) + import (backend) + smoke docker build (PRs / non-main)
-#
-# - deploy-replit: on push / workflow_dispatch to `main` after a green build. The
-#   curl step runs only when REPLIT_DEPLOY_HOOK is set. Job env copies the
-#   secret so the step can use `if: env... != ''` (IDE-friendly, same behavior).
-#   Replit can also deploy when the Repl is Git-connected; the hook is optional.
-#
-# Secret (optional):
-#   REPLIT_DEPLOY_HOOK — full URL; curl POST is sent with no body (tweak the step
-#   if your hook expects headers or JSON — see Replit deployment / integration docs).
-#
 name: CI (Replit)
 
 on:
@@ -53,7 +40,7 @@ jobs:
           cache-dependency-path: pyproject.toml
 
       - name: Install Python deps
-        run: pip install .
+        run: pip install -r requirements.txt
 
       - name: Import FastAPI app
         run: python -c "import backend.main; print('backend import ok')"
