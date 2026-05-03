@@ -141,3 +141,14 @@ body,
     @apply input resize-y leading-relaxed font-mono text-xs;
   }
 }
+
+/* Markdown tables rendered from model output */
+table {
+  @apply w-full text-sm border-collapse my-3;
+}
+table th {
+  @apply text-left font-semibold px-2 py-1.5 border-b border-line text-ink;
+}
+table td {
+  @apply text-left px-2 py-1.5 border-b border-line/50 text-ink/85;
+}

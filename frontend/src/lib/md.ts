@@ -3,7 +3,9 @@
  */
 
 export function renderMarkdown(src: string): string {
-  let text = escapeHtml(src);
+  // Normalize model-emitted <br> / <br/> tags to actual newlines before escaping.
+  let text = src.replace(/<br\s*\/?>/gi, "\n");
+  text = escapeHtml(text);
 
   text = text.replace(
     /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g,
@@ -15,6 +17,7 @@ export function renderMarkdown(src: string): string {
   let inUL = false;
   let inOL = false;
   let inBQ = false;
+  let inTable = false;
   let paraBuf: string[] = [];
 
   const flushPara = () => {
@@ -39,6 +42,12 @@ export function renderMarkdown(src: string): string {
       inBQ = false;
     }
   };
+  const closeTable = () => {
+    if (inTable) {
+      out.push("</tbody></table>");
+      inTable = false;
+    }
+  };
 
   for (const raw of lines) {
     const line = raw.trimEnd();
@@ -54,6 +63,30 @@ export function renderMarkdown(src: string): string {
       flushPara();
       closeLists();
       closeBQ();
+      closeTable();
+      continue;
+    }
+    // Markdown table row: starts and ends with |, or has | separators
+    if (/^\|(.+)\|$/.test(line.trim())) {
+      flushPara();
+      closeLists();
+      closeBQ();
+      const trimmed = line.trim();
+      const cells = trimmed.slice(1, -1).split("|").map((c) => c.trim());
+      // Skip separator rows (e.g. |---|---|)
+      if (cells.every((c) => /^[-:\s]+$/.test(c))) {
+        continue;
+      }
+      if (!inTable) {
+        out.push('<table><thead><tr>');
+        out.push(cells.map((c) => `<th>${inlineMd(c)}</th>`).join(""));
+        out.push('</tr></thead><tbody>');
+        inTable = true;
+      } else {
+        out.push('<tr>');
+        out.push(cells.map((c) => `<td>${inlineMd(c)}</td>`).join(""));
+        out.push('</tr>');
+      }
       continue;
     }
     if (/^-{3,}$|^_{3,}$|^\*{3,}$/.test(line.trim())) {
@@ -117,6 +150,7 @@ export function renderMarkdown(src: string): string {
   flushPara();
   closeLists();
   closeBQ();
+  closeTable();
 
   return out.join("\n");
 }

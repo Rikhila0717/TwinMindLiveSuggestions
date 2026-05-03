@@ -1,10 +1,5 @@
 import type { AppSettings, Suggestion } from "../types";
 
-/**
- * Thin typed client for our FastAPI backend. Every request forwards the
- * user's Groq key via `x-groq-key`; the backend attaches it as a Bearer
- * token on the call to Groq. Nothing is stored server-side.
- */
 
 function withKey(key: string, extra?: HeadersInit): HeadersInit {
   return { "x-groq-key": key, ...(extra ?? {}) };
