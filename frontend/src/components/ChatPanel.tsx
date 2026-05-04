@@ -78,9 +78,9 @@ export default function ChatPanel({ onSend, onStop, disabled, keyMissing }: Prop
             placeholder={
               keyMissing
                 ? "Add your Groq API key in Settings to enable chat…"
-                : 'Ask anything about the conversation — "summarize the last 5 minutes"…'
+                : 'Ask anything — "summarize the last 5 minutes"…'
             }
-            className="input resize-none font-sans text-sm flex-1 min-h-[40px] max-h-[140px]"
+            className="input resize-none font-sans text-xs flex-1 min-h-[40px] max-h-[140px]"
             disabled={disabled}
           />
           {isStreaming ? (
